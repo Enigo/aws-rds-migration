@@ -1,0 +1,68 @@
+---
+AWSTemplateFormatVersion: 2010-09-09
+
+Description: Postgres Database stack
+
+Parameters:
+  Env:
+    Description: Environment tag
+    Type: String
+    AllowedValues:
+      - test
+      - prod
+  InstanceClass:
+    Description: DB Instance class
+    Type: String
+  VPCSecurityGroups:
+    Description: Comma-separated VPC Security Groups
+    Type: String
+  Subnets:
+    Description: Comma-separated Subnets
+    Type: String
+  SecretName:
+    NoEcho: true
+    Description: Secrets Manager Name
+    Type: String
+
+Resources:
+  Database:
+    Type: 'AWS::RDS::DBInstance'
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      AllocatedStorage: 100
+      AllowMajorVersionUpgrade: false
+      AutoMinorVersionUpgrade: false
+      BackupRetentionPeriod: 2
+      CACertificateIdentifier: rds-ca-2019
+      CopyTagsToSnapshot: true
+      DBInstanceClass: !Ref InstanceClass
+      DBInstanceIdentifier: db-name
+      DBSubnetGroupName: !Ref DatabaseSubnetGroup
+      DeletionProtection: true
+      EnablePerformanceInsights: false
+      Engine: postgres
+      EngineVersion: 13.6
+      Iops: 1000
+      MasterUsername: !Sub "{{resolve:secretsmanager:${SecretName}:SecretString:DB_MASTER_USER}}"
+      MasterUserPassword: !Sub "{{resolve:secretsmanager:${SecretName}:SecretString:DB_MASTER_PASSWORD}}"
+      MultiAZ: true
+      Port: 5432
+      PreferredBackupWindow: 02:00-02:30
+      PubliclyAccessible: false
+      StorageEncrypted: true
+      StorageType: io1
+      Tags:
+        - Key: Env
+          Value: !Ref Env
+      VPCSecurityGroups: !Split [ ",", !Ref VPCSecurityGroups ]
+
+  DatabaseSubnetGroup:
+    Type: AWS::RDS::DBSubnetGroup
+    Properties:
+      DBSubnetGroupDescription: "Subnet group for Postgres DB"
+      DBSubnetGroupName: postgres-db-group
+      SubnetIds: !Split [ ",", !Ref Subnets ]
+      Tags:
+        - Key: Env
+          Value: !Ref Env

@@ -1,0 +1,5 @@
+Env: prod
+InstanceClass: db.m6g.large
+VPCSecurityGroups: sg-123,sg-456
+Subnets: subnet-1,subnet-2,subnet-3
+SecretName: /Secret/Manager/name
